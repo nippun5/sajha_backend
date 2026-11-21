@@ -1,0 +1,9 @@
+# Local-only test profile. Do NOT deploy this profile to Render.
+# No SMS is sent. The one-time code appears ONLY in the Spring Boot terminal.
+server:
+  address: 127.0.0.1
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/sajha?useUnicode=true&characterEncoding=utf8&connectionTimeZone=UTC
+    username: sajha_dev
+    password: dev_password_only

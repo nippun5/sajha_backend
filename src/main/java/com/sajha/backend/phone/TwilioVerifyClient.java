@@ -3,6 +3,7 @@ package com.sajha.backend.phone;
 import com.sajha.backend.api.ApiProblem;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 import java.net.URI;
@@ -16,7 +17,8 @@ import java.util.Base64;
 
 /** Twilio Verify v2. Disabled without real provider credentials; never generates demo OTPs. */
 @Component
-public class TwilioVerifyClient {
+@Profile("!local")
+public class TwilioVerifyClient implements PhoneVerifyGateway {
     private final String accountSid,authToken,serviceSid;
     private final JsonMapper json;
     private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();

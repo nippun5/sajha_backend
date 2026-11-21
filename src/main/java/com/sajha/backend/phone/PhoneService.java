@@ -13,9 +13,9 @@ public class PhoneService {
     private final PhoneChallengeRepository challenges;
     private final UserRepository users;
     private final VerifiedContactPhoneRepository verified;
-    private final TwilioVerifyClient twilio;
+    private final PhoneVerifyGateway twilio;
     public PhoneService(PhoneChallengeRepository challenges,UserRepository users,
-                        VerifiedContactPhoneRepository verified,TwilioVerifyClient twilio){
+                        VerifiedContactPhoneRepository verified,PhoneVerifyGateway twilio){
         this.challenges=challenges;this.users=users;this.verified=verified;this.twilio=twilio;
     }
     @Transactional

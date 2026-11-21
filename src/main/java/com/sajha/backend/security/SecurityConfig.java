@@ -60,6 +60,15 @@ public class SecurityConfig {
             .authorizeHttpRequests(a->a
                 .requestMatchers(HttpMethod.GET,"/api/v1/health","/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.POST,"/api/v1/auth/register","/api/v1/auth/login","/api/v1/auth/refresh").permitAll()
+                // Phase 4C: guests browse; Spring service verifies phone for writes.
+                .requestMatchers(HttpMethod.GET,"/api/v1/marketplace/listings",
+                    "/api/v1/marketplace/listings/*").permitAll()
+                .requestMatchers(HttpMethod.POST,"/api/v1/marketplace/listings").authenticated()
+                .requestMatchers(HttpMethod.PATCH,"/api/v1/marketplace/listings/*").authenticated()
+                .requestMatchers(HttpMethod.DELETE,"/api/v1/marketplace/listings/*").authenticated()
+                // JPEG/PNG files are staged by verified users, served publicly only once attached.
+                .requestMatchers(HttpMethod.GET,"/api/v1/media/*").permitAll()
+                .requestMatchers(HttpMethod.POST,"/api/v1/media").authenticated()
                 .requestMatchers("/api/v1/admin/**").denyAll()
                 .requestMatchers("/api/v1/me/**","/api/v1/auth/logout").authenticated()
                 .anyRequest().denyAll())
