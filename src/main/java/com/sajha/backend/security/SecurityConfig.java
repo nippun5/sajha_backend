@@ -20,6 +20,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration @EnableMethodSecurity
 public class SecurityConfig {
@@ -53,9 +56,21 @@ public class SecurityConfig {
         res.getWriter().write("{\"error\":{\"code\":\""+code+"\",\"message\":\""+message+
             "\",\"details\":[],\"traceId\":\""+UUID.randomUUID()+"\"}}");
     }
-    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http,JwtAuthenticationConverter converter) throws Exception {
+    @Bean CorsConfigurationSource adminCorsSource(@Value("${app.admin.allowed-origin:http://127.0.0.1:5173}") String origin) {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(origin));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source=new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/v1/**",config);
+        return source;
+    }
+    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http,JwtAuthenticationConverter converter,
+        CorsConfigurationSource adminCorsSource) throws Exception {
         http.csrf(csrf->csrf.disable()) // Bearer-only mobile API; admin cookie+CSRF will use its own chain in Phase 4C.
-            .cors(cors->cors.disable()) // No browser app may call these mobile endpoints cross-origin yet.
+            .cors(cors->cors.configurationSource(adminCorsSource)) // No browser app may call these mobile endpoints cross-origin yet.
             .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a->a
                 .requestMatchers(HttpMethod.GET,"/api/v1/health","/actuator/health").permitAll()
@@ -69,7 +84,10 @@ public class SecurityConfig {
                 // JPEG/PNG files are staged by verified users, served publicly only once attached.
                 .requestMatchers(HttpMethod.GET,"/api/v1/media/*").permitAll()
                 .requestMatchers(HttpMethod.POST,"/api/v1/media").authenticated()
-                .requestMatchers("/api/v1/admin/**").denyAll()
+                .requestMatchers(HttpMethod.GET,"/api/v1/businesses",
+                    "/api/v1/businesses/*", "/api/v1/businesses/*/banner").permitAll()
+                .requestMatchers(HttpMethod.POST,"/api/v1/business-requests").authenticated()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/**","/api/v1/auth/logout").authenticated()
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(jwt->jwt.jwtAuthenticationConverter(converter)))

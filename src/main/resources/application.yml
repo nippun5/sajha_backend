@@ -38,6 +38,8 @@ management:
     health:
       show-details: never
 app:
+  admin:
+    allowed-origin: ${SAJHA_ADMIN_ORIGIN:http://127.0.0.1:5173}
   auth:
     jwt-secret-base64: ${JWT_SECRET_BASE64:}
     issuer: ${JWT_ISSUER:sajha-api}
