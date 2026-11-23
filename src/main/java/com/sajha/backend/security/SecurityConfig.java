@@ -89,6 +89,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,"/api/v1/business-requests").authenticated()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/**","/api/v1/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.GET,"/api/v1/businesses/*/reviews").permitAll()
+                .requestMatchers(HttpMethod.POST,"/api/v1/businesses/*/reviews",
+                    "/api/v1/businesses/*/reviews/*/reports").authenticated()
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(jwt->jwt.jwtAuthenticationConverter(converter)))
             .exceptionHandling(e->e

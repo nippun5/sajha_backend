@@ -1,6 +1,7 @@
 package com.sajha.backend.business;
 
 import com.sajha.backend.api.ApiProblem;
+import com.sajha.backend.reviews.ReviewService;
 import com.sajha.backend.user.AppUser;
 import com.sajha.backend.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -19,10 +20,11 @@ public class BusinessService {
     private final UserRepository users;
     private final BusinessImageService images;
     private final JsonMapper mapper;
+    private final ReviewService reviewService;
 
     public BusinessService(BusinessRequestRepository requests,BusinessActivityRepository activity,
-                           UserRepository users,BusinessImageService images,JsonMapper mapper){
-        this.requests=requests;this.activity=activity;this.users=users;this.images=images;this.mapper=mapper;
+                           UserRepository users,BusinessImageService images,JsonMapper mapper,ReviewService reviewService){
+        this.requests=requests;this.activity=activity;this.users=users;this.images=images;this.mapper=mapper;this.reviewService=reviewService;
     }
     private ApiProblem invalid(String message){return new ApiProblem(HttpStatus.UNPROCESSABLE_ENTITY,"INVALID_BUSINESS",message);}
     private AppUser user(String id){return users.findById(id).orElseThrow(()->
@@ -126,7 +128,8 @@ public class BusinessService {
         Map<String,Object> m=new LinkedHashMap<>();
         m.put("id",r.getId());m.put("name",r.getBusinessName());m.put("imageUrl",publicBanner(r.getId()));
         m.put("description",r.getDescription());m.put("address",r.getAddress());m.put("phone",r.getPhone());
-        m.put("website",r.getWebsite());m.put("category",r.getCategory());m.put("rating",0.0);m.put("reviewCount",0);
+        m.put("website",r.getWebsite());m.put("category",r.getCategory());
+        var rating=reviewService.ratingFor(r.getId());m.put("rating",rating.get("average"));m.put("reviewCount",rating.get("count"));
         m.put("openingHours",hours(r));m.put("latitude",r.getLatitude());m.put("longitude",r.getLongitude());
         m.put("geoapifyPlaceId",r.getPlaceId());m.put("city",r.getCity());m.put("state",r.getState());
         m.put("countryCode",r.getCountryCode());m.put("onlineOnly",r.isOnlineOnly());
@@ -167,7 +170,7 @@ public class BusinessService {
             return Map.<String,Object>of("id",e.getId(),"requestId",e.getRequestId(),"at",e.getCreatedAt(),
                 "actor",actor.getName(),"type",e.getActionType(),"detail",e.getDetail());
         }).toList();
-        return Map.of("requests",rows,"reports",List.of(),"activity",history);
+        return Map.of("requests",rows,"reports",reviewService.adminReports(),"activity",history);
     }
     private void event(BusinessRequest r,String actor,String type,String detail){
         activity.save(new BusinessActivity(r.getId(),actor,type,detail));
