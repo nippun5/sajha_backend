@@ -92,6 +92,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,"/api/v1/businesses/*/reviews").permitAll()
                 .requestMatchers(HttpMethod.POST,"/api/v1/businesses/*/reviews",
                     "/api/v1/businesses/*/reviews/*/reports").authenticated()
+                .requestMatchers(HttpMethod.POST,
+                    "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset").permitAll()
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(jwt->jwt.jwtAuthenticationConverter(converter)))
             .exceptionHandling(e->e

@@ -37,4 +37,8 @@ public class AppUser {
     public boolean isPhoneVerified(){return phoneVerified;}
     public Set<String> getRoles(){return roles;}
     public void verifyAccountPhone(){this.phoneVerified=true;this.updatedAt=Instant.now();}
+    public void changePasswordHash(String newHash) {
+        this.passwordHash = newHash;
+        this.updatedAt = Instant.now();
+    }
 }
