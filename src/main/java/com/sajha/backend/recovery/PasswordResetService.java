@@ -55,6 +55,7 @@ public class PasswordResetService {
             throw new ApiProblem(HttpStatus.UNPROCESSABLE_ENTITY,
                 "PASSWORD_UNCHANGED", "Choose a different password");
         user.changePasswordHash(encoder.encode(newPassword));
+        user.revokeAccessTokens();
         // All refresh-token families for this account are revoked.
         for (var session : sessions.findByUserIdAndRevokedAtIsNull(user.getId())) session.revoke(null);
         for (var issued : tokens.findByUserIdAndUsedAtIsNull(user.getId())) issued.consume(now);

@@ -53,6 +53,9 @@ public class AuthService {
             throw new ApiProblem(HttpStatus.UNAUTHORIZED,"BAD_CREDENTIALS","Invalid email or password");
         return newSession(user);
     }
+    /** Server-verified social identities receive the same tokens and roles as password login. */
+    @Transactional
+    public AuthDtos.Tokens issueSocialSession(AppUser user){return newSession(user);}
     private AuthDtos.Tokens newSession(AppUser user){
         String token=SecurityStrings.randomToken();
         sessions.save(new RefreshSession(user.getId(),UUID.randomUUID().toString(),
@@ -63,7 +66,7 @@ public class AuthService {
         Instant now=Instant.now();
         var claims=JwtClaimsSet.builder().issuer(issuer).subject(user.getId()).issuedAt(now)
             .expiresAt(now.plus(accessMinutes,ChronoUnit.MINUTES))
-            .claim("roles",new ArrayList<>(user.getRoles())).build();
+            .claim("roles",new ArrayList<>(user.getRoles())).claim("av",user.getAuthVersion()).build();
         var header=JwsHeader.with(MacAlgorithm.HS256).build();
         String access=jwt.encode(JwtEncoderParameters.from(header,claims)).getTokenValue();
         return new AuthDtos.Tokens(access,refreshToken,"Bearer",accessMinutes*60,account(user));

@@ -29,6 +29,9 @@ public class AppUser {
         this.createdAt=Instant.now(); this.updatedAt=this.createdAt;
         this.roles.add("USER");
     }
+    @Column(name="auth_version",nullable=false) private int authVersion;
+    public int getAuthVersion(){return authVersion;}
+    public void revokeAccessTokens(){authVersion++;updatedAt=Instant.now();}
     public String getId(){return id;}
     public String getName(){return name;}
     public String getEmail(){return email;}

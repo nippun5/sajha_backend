@@ -13,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import com.sajha.backend.user.UserRepository;
+import java.util.Set;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,9 +41,21 @@ public class SecurityConfig {
         return new SecretKeySpec(secret,"HmacSHA256");
     }
     @Bean JwtEncoder jwtEncoder(SecretKey jwtSecret){return NimbusJwtEncoder.withSecretKey(jwtSecret).build();}
-    @Bean JwtDecoder jwtDecoder(SecretKey jwtSecret,@Value("${app.auth.issuer}") String issuer){
+    @Bean JwtDecoder jwtDecoder(SecretKey jwtSecret,@Value("${app.auth.issuer}") String issuer,UserRepository users){
         NimbusJwtDecoder decoder=NimbusJwtDecoder.withSecretKey(jwtSecret).macAlgorithm(MacAlgorithm.HS256).build();
-        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+            JwtValidators.createDefaultWithIssuer(issuer), jwt -> {
+                var user=users.findById(jwt.getSubject()).orElse(null);
+                Object raw=jwt.getClaim("av");
+                var roles=jwt.getClaimAsStringList("roles");
+                if(user==null || !(raw instanceof Number) ||
+                   ((Number)raw).intValue()!=user.getAuthVersion() ||
+                   roles==null || !Set.copyOf(roles).equals(user.getRoles())){
+                    return OAuth2TokenValidatorResult.failure(new OAuth2Error(
+                        "access_revoked","Access no longer valid",""));
+                }
+                return OAuth2TokenValidatorResult.success();
+            }));
         return decoder;
     }
     @Bean JwtAuthenticationConverter jwtAuthenticationConverter(){
@@ -94,6 +111,7 @@ public class SecurityConfig {
                     "/api/v1/businesses/*/reviews/*/reports").authenticated()
                 .requestMatchers(HttpMethod.POST,
                     "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset").permitAll()
+                .requestMatchers(HttpMethod.POST,"/api/v1/auth/social/*", "/api/v1/auth/social/apple/challenge").permitAll()
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(jwt->jwt.jwtAuthenticationConverter(converter)))
             .exceptionHandling(e->e
